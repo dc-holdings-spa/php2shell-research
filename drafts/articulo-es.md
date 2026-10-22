@@ -320,6 +320,22 @@ entorno desechable y ausencia de credenciales reutilizables. Cuando existe un
 advisory y tests del parche, reconstruir el caso desde esas fuentes suele dar
 mejor evidencia que ejecutar código ajeno y confiar en su salida.
 
+## La investigación continúa
+
+Esta primera entrega cierra con un diferencial reproducible del parche, un
+crash del consumidor FPM exclusivo de la versión vulnerable, un mapa por SAPI,
+una hipótesis forense y una auditoría acotada de la oleada pública. Es material
+suficiente para que otros equipos comparen sus entornos, mejoren el hunting y
+eviten confundir un fatal o una cadena de aplicación con explotación completa
+del motor.
+
+El siguiente paso será identificar bajo debugger la estructura exacta que
+consume el estado stale y validar las reglas defensivas contra tráfico del
+laboratorio. Publicaremos una segunda entrega si esa evidencia permite avanzar
+el análisis. Hasta entonces, el resultado queda descrito por lo que demuestra:
+un crash diferencial del motor, reproducible y separado de cualquier claim de
+RCE controlado.
+
 PHP2Shell expuso una falla profunda en el ciclo de vida del intérprete. La
 respuesta útil combina actualización, mediciones comparables, preservación de
 evidencia y atribución precisa. También exige declarar el límite del

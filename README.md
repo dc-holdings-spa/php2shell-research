@@ -44,6 +44,17 @@ engine defect.
 
 See [Claims and scope](docs/claims-and-scope.md) before quoting this work.
 
+## Research status
+
+The first research phase is complete and supports publication: the patch
+differential, FPM stale-state crash, cross-SAPI map, forensic hypothesis, and
+same-day repository audit are documented with explicit limits.
+
+A follow-up will be published if subsequent debugger work identifies the exact
+crashing structure or produces stronger defensive artifacts. Until then, the
+FPM result remains an engine-level crash differential, not controlled
+corruption or engine-level RCE.
+
 ## Repository map
 
 - [`docs/methodology.md`](docs/methodology.md): isolated lab and validation method.
@@ -72,6 +83,7 @@ Discovery and primary technical credit belongs to Calif (Ryan Austin /
 `lcfr_hax`), Wiz Research, and OpenAI, with the PHP maintainers who designed
 and shipped the fix. Qi Deng and ikow documented additional public chains.
 Our contribution is the independent matrix, cross-SAPI observations, forensic
-artifact, patch differential, and same-day repository audit described here.
+artifact, FPM crash differential, patch differential, and same-day repository
+audit described here.
 
 Website: [adversario.cl](https://adversario.cl)
