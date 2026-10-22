@@ -2,4 +2,3 @@
 alert http any any -> $HOME_NET any (msg:"PHP2Shell public tool User-Agent observed"; flow:established,to_server; http.user_agent; content:"php2shell-109618"; nocase; classtype:web-application-attack; sid:9109618; rev:1;)
 alert http any any -> $HOME_NET any (msg:"PHP2Shell public tool multipart boundary observed"; flow:established,to_server; http.request_body; content:"B7kQpoc618"; fast_pattern; classtype:web-application-attack; sid:9109619; rev:1;)
 alert http any any -> $HOME_NET any (msg:"PHP2Shell public tool command marker observed"; flow:established,to_server; http.request_body; content:"JACKALPOC"; fast_pattern; classtype:web-application-attack; sid:9109620; rev:1;)
-

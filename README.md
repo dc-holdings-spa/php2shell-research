@@ -66,4 +66,3 @@ Our contribution is the independent matrix, cross-SAPI observations, forensic
 artifact, patch differential, and same-day repository audit described here.
 
 Website: [adversario.cl](https://adversario.cl)
-

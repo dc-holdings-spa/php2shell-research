@@ -45,4 +45,3 @@ Every statement should be labeled as one of:
 - **Third-party research:** Calif, Wiz, Qi Deng, ikow, or another cited author.
 - **Adversario observation:** produced by our lab and backed by retained logs.
 - **Hypothesis:** plausible interpretation that still requires validation.
-

@@ -55,4 +55,3 @@ The midpoint of the measured cliff provides a one-request differential for the
 tested versions. This repository intentionally does not publish the network
 driver. The retained implementation must be used only in an isolated or
 explicitly authorized environment, with worker health and capacity monitored.
-

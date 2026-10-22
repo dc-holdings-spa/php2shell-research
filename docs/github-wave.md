@@ -42,4 +42,3 @@ Same-day exploit searches mix primary research, defensive work, copies, and
 attention farming. Review code statically, remove embedded targets, rebuild
 from primary advisories when practical, and execute only inside disposable
 environments without reusable credentials.
-

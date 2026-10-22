@@ -23,4 +23,3 @@ Fix credit belongs to the PHP maintainers identified in the advisories and
 commit history. Public chain descriptions are attributed to their respective
 authors. Adversario claims only the laboratory observations explicitly labeled
 as such in this repository.
-

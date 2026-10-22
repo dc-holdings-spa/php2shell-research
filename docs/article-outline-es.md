@@ -65,4 +65,3 @@ decir exactamente qué se logró y qué todavía no.
 El laboratorio pasó de una VM apagada a RCE remoto reproducido en alrededor de
 24 horas. Este dato acompaña la metodología; no debe reemplazar los resultados
 ni presentarse como una carrera.
-
