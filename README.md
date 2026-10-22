@@ -46,6 +46,7 @@ See [Claims and scope](docs/claims-and-scope.md) before quoting this work.
 - [`docs/detection.md`](docs/detection.md): defensive monitoring guidance.
 - [`docs/sources.md`](docs/sources.md): primary sources and attribution.
 - [`docs/article-outline-es.md`](docs/article-outline-es.md): Spanish article structure.
+- [`drafts/articulo-es.md`](drafts/articulo-es.md): private Spanish article draft.
 - [`evidence/matrix-summary.csv`](evidence/matrix-summary.csv): sanitized build matrix.
 - [`detections/`](detections/): narrow indicators for known public tooling.
 
