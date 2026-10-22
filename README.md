@@ -7,6 +7,10 @@ This repository documents our same-day validation of CVE-2026-109618 and
 CVE-2026-109619, the observable differences between vulnerable and patched PHP
 builds, and the public-repository wave that followed disclosure.
 
+Published article:
+[Español](https://adversario.cl/noticias/php2shell-laboratorio-adversario) ·
+[English](https://adversario.cl/noticias/php2shell-laboratorio-adversario?lang=en)
+
 ## What we found
 
 - A deterministic vulnerable-versus-patched differential across eight PHP
@@ -63,8 +67,9 @@ corruption or engine-level RCE.
 - [`docs/detection.md`](docs/detection.md): defensive monitoring guidance.
 - [`docs/sources.md`](docs/sources.md): primary sources and attribution.
 - [`docs/article-outline-es.md`](docs/article-outline-es.md): Spanish article structure.
-- [`drafts/articulo-es.md`](drafts/articulo-es.md): publication-ready Spanish
-  long-form article.
+- [`drafts/articulo-es.md`](drafts/articulo-es.md): Spanish long-form source
+  snapshot. The bilingual Markdown rendered by adversario.cl is the published
+  edition.
 - [`evidence/matrix-summary.csv`](evidence/matrix-summary.csv): sanitized build matrix.
 - [`evidence/fpm-stale-state-summary.csv`](evidence/fpm-stale-state-summary.csv):
   sanitized PHP-FPM producer/consumer differential.
