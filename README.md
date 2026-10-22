@@ -63,7 +63,8 @@ corruption or engine-level RCE.
 - [`docs/detection.md`](docs/detection.md): defensive monitoring guidance.
 - [`docs/sources.md`](docs/sources.md): primary sources and attribution.
 - [`docs/article-outline-es.md`](docs/article-outline-es.md): Spanish article structure.
-- [`drafts/articulo-es.md`](drafts/articulo-es.md): private Spanish article draft.
+- [`drafts/articulo-es.md`](drafts/articulo-es.md): publication-ready Spanish
+  long-form article.
 - [`evidence/matrix-summary.csv`](evidence/matrix-summary.csv): sanitized build matrix.
 - [`evidence/fpm-stale-state-summary.csv`](evidence/fpm-stale-state-summary.csv):
   sanitized PHP-FPM producer/consumer differential.

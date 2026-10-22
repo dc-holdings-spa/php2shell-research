@@ -1,7 +1,20 @@
 # PHP2Shell bajo el microscopio: qué cambió con el parche y qué encontramos al reproducirlo
 
-> Borrador editorial privado. Los conteos de GitHub corresponden a una captura
-> del 21 de octubre de 2026 y deben conservar su fecha al publicarse.
+**Dos vulnerabilidades críticas obligaron a PHP a publicar una corrección de
+emergencia. En Adversario comparamos ocho builds, reproducimos el crash del
+motor en PHP-FPM y medimos una diferencia de memoria que separa con claridad
+las versiones vulnerables de las corregidas.**
+
+**Investigación:** Adversario Security Research · **Autor:** 3ky<br>
+**Fecha:** 22 de octubre de 2026 · **Lectura:** 13 minutos
+
+> **Resumen ejecutivo:** actualice el runtime PHP a 8.2.35, 8.3.36, 8.4.27 o
+> 8.5.12. En nuestro laboratorio, las cuatro versiones vulnerables fallaron al
+> procesar el mismo multipart que las cuatro versiones corregidas completaron.
+> También reprodujimos en PHP-FPM 8.2.34 un SIGSEGV después de consumir estado
+> stale; PHP-FPM 8.2.35 permaneció estable bajo el mismo diseño. Este trabajo
+> demuestra el diferencial y el crash del motor, pero no ejecución controlada
+> mediante la corrupción de memoria.
 
 El 21 de octubre de 2026, PHP publicó cuatro versiones de emergencia para
 corregir CVE-2026-109618 y CVE-2026-109619. Ambas vulnerabilidades afectan al
@@ -15,6 +28,13 @@ distinta el inicio, el cierre y la reutilización de un worker. PHP publicó
 8.2.35, 8.3.36, 8.4.27 y 8.5.12 como versiones corregidas. Las ramas anteriores
 sin soporte requieren migración o los backports mínimos publicados por el
 proyecto.
+
+| Rama | Última versión vulnerable probada | Versión corregida |
+|---|---:|---:|
+| PHP 8.2 | 8.2.34 | **8.2.35** |
+| PHP 8.3 | 8.3.35 | **8.3.36** |
+| PHP 8.4 | 8.4.26 | **8.4.27** |
+| PHP 8.5 | 8.5.11 | **8.5.12** |
 
 Durante las primeras 24 horas montamos un laboratorio para observar el cambio
 entre versiones vulnerables y parcheadas. La meta era conseguir evidencia
@@ -343,3 +363,22 @@ experimento: pudimos medir el efecto del parche y reproducir cadenas remotas
 dependientes de la aplicación. También reprodujimos un crash diferencial del
 motor en la cadena FPM; la corrupción controlada y la ejecución final mediante
 esa ruta siguen fuera de nuestros resultados.
+
+## Fuentes y créditos
+
+- [Anuncio de emergencia de PHP](https://www.php.net/archive/2026.php#2026-10-21-5)
+- [GHSA-w8hw-w9fx-j79w: CVE-2026-109618](https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w)
+- [GHSA-6wmf-4rv5-p3rp: CVE-2026-109619](https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp)
+- [Commit de corrección 3584a98bda](https://github.com/php/php-src/commit/3584a98bda0f2c0d367255b046798b0d3a221a19)
+- [Calif: A tale of two PHP remote vulnerabilities](https://calif.io/php2shell/)
+- [Wiz Research: PHP2Shell](https://www.wiz.io/blog/php2shell-php-rce)
+- [Qi Deng: Dissecting PHP's critical vulnerabilities](https://qideng.substack.com/p/php2shell-dissecting-phps-critical)
+- [NCSC-NL: información operacional de PHP2Shell](https://github.com/NCSC-NL/php2shell)
+
+El crédito del descubrimiento corresponde a Calif, Wiz Research y OpenAI,
+según los advisories de PHP. Las cadenas públicas adicionales se atribuyen a
+Qi Deng e ikow. Los resultados de laboratorio identificados como propios en
+este artículo corresponden a Adversario Security Research.
+
+> Los conteos de repositorios y estrellas corresponden a una captura realizada
+> el 21 de octubre de 2026. Representan ese momento y pueden haber cambiado.
