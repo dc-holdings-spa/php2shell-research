@@ -35,7 +35,33 @@ a useful forensic hypothesis when correlated with PHP memory errors, session
 activity, and request timestamps. A zero-byte session alone is not a reliable
 indicator of exploitation.
 
-## 5. Cross-SAPI map and negative results
+## 5. PHP-FPM stale-state crash differential
+
+The original 5 MiB/8 MiB calibration exhausted memory while allocating the
+initial hash table, before the unserialize walk had populated useful state.
+Under a 32 MiB limit, producer session graphs of 14 MiB, 16 MiB, and 18 MiB
+instead failed during the walk with small allocation requests.
+
+On PHP 8.2.34 FPM, the first upload-progress consumer after each producer
+generated SIGSEGV. The 14–18 MiB cases reached the same instruction offset for
+the observed runs, while their fault addresses varied with the graph size. A
+repeated 14 MiB run reproduced both the instruction offset and fault address.
+
+With the same producer and consumer design on PHP 8.2.35, the 14 MiB and 16 MiB
+cases produced six clean application responses each and no segfaults. FPM logs
+for the vulnerable case recorded the full order:
+
+```text
+Fatal error: Allowed memory size ... exhausted (tried to allocate 4096 bytes)
+Warning: Unknown: Failed to decode session object
+child exited on signal 11 (SIGSEGV)
+```
+
+This closes a vulnerable-versus-patched engine crash differential consistent
+with CVE-2026-109619. It does not establish instruction-pointer control, heap
+grooming, or command execution.
+
+## 6. Cross-SAPI map and negative results
 
 - One-shot CGI exposed the parsing differential but could not preserve state
   between requests.
@@ -44,12 +70,14 @@ indicator of exploitation.
 - Windows `mod_php` reproduced the memory cliff; 240 PageHeap-assisted attacks
   produced no crash for the tested request forms.
 - Linux `mod_php` reproduced the parser differential and the early session
-  consumer signature, but not controlled engine corruption.
+  consumer signature without a crash in the tested forms.
+- Linux FPM 8.2.34 reproduced the producer/consumer SIGSEGV; PHP 8.2.35 remained
+  clean in the matched controls described above.
 
 These negative results narrow the useful search space and prevent clean OOMs
 or unrelated crashes from being reported as exploitation.
 
-## 6. Derived authorized-lab check
+## 7. Derived authorized-lab check
 
 The midpoint of the measured cliff provides a one-request differential for the
 tested versions. This repository intentionally does not publish the network

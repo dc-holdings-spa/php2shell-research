@@ -184,6 +184,43 @@ Estos negativos importan. Delimitan qué formas terminan en un OOM limpio, qué
 SAPI elimina el worker y dónde conviene buscar el estado persistente. También
 evitan transformar cualquier caída de PHP en una supuesta prueba de RCE.
 
+## El consumidor stale finalmente cayó en PHP-FPM
+
+Las primeras pruebas de la cadena entre requests terminaban limpias porque el
+productor fallaba demasiado pronto. Con una sesión de 30 MiB y un límite de 32
+MiB, PHP no alcanzaba a deserializar: agotaba memoria al reservar el buffer del
+archivo. Con la primera calibración de 5 MiB/8 MiB, el fallo ocurría al reservar
+la tabla inicial. En ambos casos quedaba poco estado útil para el consumidor.
+
+Al mover el experimento a PHP-FPM 8.2 y usar `memory_limit=32M`, las sesiones de
+14, 16 y 18 MiB agotaron memoria durante el walk de `unserialize`. El primer
+request de upload progress atendido después por el mismo worker produjo
+SIGSEGV en PHP 8.2.34:
+
+```text
+PHP 8.2.34 FPM, sesión productora de 14 MiB
+  producer: FATAL_OOM, tried to allocate 4096 bytes
+  consumer #1: respuesta vacía
+  php-fpm: child exited on signal 11 (SIGSEGV)
+
+PHP 8.2.35 FPM, mismo diseño de 14 y 16 MiB
+  producer: OOM durante el walk
+  consumers: [APP, APP, APP, APP, APP, APP]
+  segfaults: 0
+```
+
+Los casos vulnerables de 14–18 MiB alcanzaron el mismo offset de instrucción en
+las corridas observadas. Las direcciones de fallo variaron con el tamaño; una
+repetición del caso de 14 MiB reprodujo ambas direcciones. El log de FPM dejó la
+secuencia completa: fatal dentro del productor, warning al decodificar la sesión
+del consumidor y salida del child por señal 11.
+
+Este resultado reproduce un crash diferencial del motor consistente con
+CVE-2026-109619. Todavía falta capturar el backtrace bajo debugger, identificar
+la estructura exacta y demostrar un overwrite controlado. Un SIGSEGV
+determinista ofrece un oráculo para continuar el análisis; no equivale a control
+del instruction pointer ni a una shell.
+
 ## Una pista forense en los archivos de sesión
 
 Al calibrar el productor de sesión, un archivo de aproximadamente 5 MiB hizo
@@ -213,10 +250,10 @@ en PHP 8.4.26 como en 8.4.27.
 
 La ejecución es real, pero pertenece a una superficie de sesión y aplicación
 documentada públicamente por Qi Deng e ikow. Nuestro laboratorio todavía no ha
-demostrado control del instruction pointer ni ejecución final mediante el heap
-grooming de CVE-2026-109618/109619. El diferencial del parche, las cadenas de
-aplicación y el RCE del motor son resultados distintos y deben permanecer
-separados.
+demostrado control del instruction pointer ni ejecución final mediante heap
+grooming. Ahora sí reprodujimos el crash del consumidor stale en el motor con
+un control parcheado limpio. El crash diferencial, las cadenas dependientes de
+la aplicación y un RCE del motor siguen siendo resultados distintos.
 
 ## La segunda emergencia apareció en GitHub
 
@@ -287,5 +324,6 @@ PHP2Shell expuso una falla profunda en el ciclo de vida del intérprete. La
 respuesta útil combina actualización, mediciones comparables, preservación de
 evidencia y atribución precisa. También exige declarar el límite del
 experimento: pudimos medir el efecto del parche y reproducir cadenas remotas
-dependientes de la aplicación; la ejecución completa mediante la corrupción de
-memoria del motor sigue fuera de nuestros resultados.
+dependientes de la aplicación. También reprodujimos un crash diferencial del
+motor en la cadena FPM; la corrupción controlada y la ejecución final mediante
+esa ruta siguen fuera de nuestros resultados.

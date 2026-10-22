@@ -1,0 +1,6 @@
+build,status,memory_limit_mib,producer_file_mib,producer_stage,consumer_requests,consumer_result,segfaults
+8.2.34,vulnerable,32,14,unserialize_midwalk,6,first_consumer_empty_then_worker_recovered,1
+8.2.34,vulnerable,32,16,unserialize_midwalk,6,first_consumer_empty_then_worker_recovered,1
+8.2.34,vulnerable,32,18,unserialize_midwalk,6,first_consumer_empty_then_worker_recovered,1
+8.2.35,patched,32,14,unserialize_midwalk,6,all_application_markers,0
+8.2.35,patched,32,16,unserialize_midwalk,6,all_application_markers,0

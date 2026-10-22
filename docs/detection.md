@@ -12,6 +12,8 @@ reverse-proxy, process, and session evidence.
   empty file controls.
 - Unexpectedly large or malformed PHP session cookies.
 - New zero-byte session files correlated with session-decoding memory errors.
+- A session-deserialization OOM followed by `Failed to decode session object`
+  and a PHP-FPM child exiting on signal 11 in the same worker pool.
 
 ## Public-tool fingerprints
 

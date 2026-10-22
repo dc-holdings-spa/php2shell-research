@@ -30,25 +30,32 @@ los tres errores del harness y por qué invalidamos las primeras corridas.
 Desarrollar el diferencial 8/8, la muerte de 8.3.35 y el acantilado 140k/260k.
 Explicar que son observaciones de laboratorio y que un OOM no equivale a RCE.
 
-### 4. Lo que la sesión dejó en disco
+### 4. El crash diferencial del consumidor FPM
+
+Explicar por qué los productores que fallaban en el buffer o en el hash inicial
+no dejaban suficiente estado, cómo 14–18 MiB bajo un límite de 32 MiB movieron
+el OOM al walk y el contraste entre PHP 8.2.34 y 8.2.35. Mantener el límite del
+claim: SIGSEGV determinista del motor, todavía sin control de RIP ni RCE.
+
+### 5. Lo que la sesión dejó en disco
 
 Presentar la truncación a cero bytes como hipótesis forense correlacionable, no
 como IoC concluyente. Añadir el mapa por SAPI y los negativos honestos.
 
-### 5. Sí logramos ejecución, pero por otra superficie
+### 6. Sí logramos ejecución, pero por otra superficie
 
 Explicar Chain A y Chain C con atribución. Declarar las condiciones no-default
 de Chain A y que ambas cadenas funcionaron también en versiones parcheadas.
 Cerrar la sección diciendo explícitamente que el grooming del motor sigue
 pendiente.
 
-### 6. Mientras investigábamos aparecieron 267 repositorios
+### 7. Mientras investigábamos aparecieron 267 repositorios
 
 Contar las tres poblaciones, los cinco análisis profundos, el target embebido y
 la imitación de identidad. Incluir las limitaciones: no auditamos la cola larga
 y no confirmamos malware en la muestra.
 
-### 7. Qué hacer ahora
+### 8. Qué hacer ahora
 
 Parchear PHP, reiniciar workers, aplicar mitigaciones temporales, revisar logs y
 preservar evidencia. Explicar qué correlaciones buscar y por qué no basta con

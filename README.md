@@ -20,6 +20,8 @@ builds, and the public-repository wave that followed disclosure.
   as a forensic hypothesis when correlated with memory errors and request logs.
 - Different behavior across one-shot CGI, persistent FastCGI, Windows
   `mod_php`, and Linux `mod_php`, including negative results.
+- A deterministic stale-state consumer crash on PHP 8.2.34 FPM after a
+  producer-side mid-walk OOM; the matching PHP 8.2.35 control completed cleanly.
 - A same-day snapshot of 267 GitHub search results and five deep static audits.
   We confirmed spam and attribution problems, but no malware in the inspected
   sample.
@@ -29,6 +31,10 @@ builds, and the public-repository wave that followed disclosure.
 We reproduced remote command execution through public, application-dependent
 chains. We did **not** reproduce end-to-end command execution through the
 engine memory-corruption path of CVE-2026-109618/109619.
+
+We did reproduce an engine-level crash differential consistent with
+CVE-2026-109619. A deterministic SIGSEGV is evidence of a memory-safety failure;
+it is not evidence of instruction-pointer control or command execution.
 
 The Chain A reproduction required an LFI, a known session path,
 `session.upload_progress.cleanup=Off`, and `session.use_only_cookies=0`. The
@@ -48,6 +54,8 @@ See [Claims and scope](docs/claims-and-scope.md) before quoting this work.
 - [`docs/article-outline-es.md`](docs/article-outline-es.md): Spanish article structure.
 - [`drafts/articulo-es.md`](drafts/articulo-es.md): private Spanish article draft.
 - [`evidence/matrix-summary.csv`](evidence/matrix-summary.csv): sanitized build matrix.
+- [`evidence/fpm-stale-state-summary.csv`](evidence/fpm-stale-state-summary.csv):
+  sanitized PHP-FPM producer/consumer differential.
 - [`detections/`](detections/): narrow indicators for known public tooling.
 
 ## Safe use

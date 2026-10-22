@@ -22,6 +22,8 @@ Tests covered:
 - persistent FastCGI;
 - Windows Apache `mod_php`;
 - Linux Apache `mod_php` for targeted reproduction.
+- Linux PHP-FPM 8.2.34/8.2.35 with a static one-worker pool for the stale-state
+  producer/consumer comparison.
 
 The environment was isolated, snapshotted before testing, and bound to local
 interfaces. Raw evidence and infrastructure identifiers remain private.
@@ -39,6 +41,22 @@ This requirement invalidated two early runs after we found three harness bugs:
 3. PowerShell here-string expansion that corrupted PHP fixtures.
 
 Only runs collected after those defects were corrected entered the matrix.
+
+## FPM stale-state comparison
+
+The FPM comparison used `memory_limit=32M` and a single worker so the producer
+and consumer were handled by the same process. Serialized session graphs were
+calibrated until the producer OOM occurred during the unserialize walk rather
+than while reading the session buffer or allocating the initial hash table.
+
+On PHP 8.2.34, 14 MiB, 16 MiB, and 18 MiB producer files reached the mid-walk
+condition and the first consumer produced SIGSEGV. The 14 MiB and 16 MiB cases
+were repeated against PHP 8.2.35; six consumer requests completed for each case
+without a segfault.
+
+The Linux kernel and FPM logs establish the fatal-OOM → session-decode warning
+→ SIGSEGV sequence. Debugger capture was still pending at the time of this
+snapshot, so the exact crashing function and corrupt structure remain open.
 
 ## Interpretation rules
 

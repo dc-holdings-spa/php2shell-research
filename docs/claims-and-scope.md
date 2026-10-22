@@ -10,9 +10,12 @@
    tested streamed-body case.
 4. Producer-side out-of-memory inside session decoding, followed by a
    zero-byte session file in the tested setup.
-5. Remote HTTP command execution through public Chain A in a deliberately
+5. On PHP 8.2.34 FPM, a producer OOM during the unserialize walk followed by a
+   session upload-progress consumer produced a deterministic SIGSEGV. Matching
+   14 MiB and 16 MiB trials on PHP 8.2.35 completed without a segfault.
+6. Remote HTTP command execution through public Chain A in a deliberately
    vulnerable Linux lab, on both PHP 8.4.26 and 8.4.27.
-6. Application-dependent command execution through the public handler-mismatch
+7. Application-dependent command execution through the public handler-mismatch
    chain on both vulnerable and patched Windows builds.
 
 ## Not demonstrated by us
@@ -23,6 +26,10 @@
   CVE-2026-109619.
 - The large PHPSESSID heap-leak primitive in our Windows CGI setup.
 - Malware across the complete set of 267 GitHub search results.
+
+The FPM SIGSEGV establishes a vulnerable-versus-patched engine crash
+differential. Until a debugger backtrace and controlled overwrite are captured,
+we do not describe it as controlled corruption or RCE.
 
 ## Required wording for application-dependent RCE
 
