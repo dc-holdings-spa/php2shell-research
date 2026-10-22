@@ -57,11 +57,31 @@ Warning: Unknown: Failed to decode session object
 child exited on signal 11 (SIGSEGV)
 ```
 
-This closes a vulnerable-versus-patched engine crash differential consistent
-with CVE-2026-109619. It does not establish instruction-pointer control, heap
-grooming, or command execution.
+This closed the initial vulnerable-versus-patched engine crash differential
+consistent with CVE-2026-109619 and supplied the oracle used in the controlled
+execution work below.
 
-## 6. Cross-SAPI map and negative results
+## 6. Controlled engine execution in the instrumented FPM lab
+
+The debugger backtrace placed stale-state consumption in `var_tmp_var`, below
+`rfc1867_post_handler` during request startup. Subsequent trials reclaimed a
+stale object slot with multipart content and caused the engine to obtain the
+resurrected object's handler-table pointer from attacker-controlled bytes.
+
+The evidence ladder was:
+
+- controlled handler-table marker fault: three out of three runs;
+- chosen instruction-pointer value: three out of three runs;
+- `system()` executing `id` as `www-data`: approximately two out of three runs;
+- the same recipe on PHP 8.2.35: no command execution and no crash.
+
+This demonstrates execution through the CVE-2026-109619 engine path on PHP
+8.2.34 FPM under the tested conditions. ASLR was disabled, the harness planted
+the producer session directly, no address leak was reproduced, and the result
+has not been ported to other builds. The exploit and raw memory artifacts are
+not part of this public repository.
+
+## 7. Cross-SAPI map and negative results
 
 - One-shot CGI exposed the parsing differential but could not preserve state
   between requests.
@@ -77,7 +97,7 @@ grooming, or command execution.
 These negative results narrow the useful search space and prevent clean OOMs
 or unrelated crashes from being reported as exploitation.
 
-## 7. Derived authorized-lab check
+## 8. Derived authorized-lab check
 
 The midpoint of the measured cliff provides a one-request differential for the
 tested versions. This repository intentionally does not publish the network

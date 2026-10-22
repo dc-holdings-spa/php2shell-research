@@ -17,19 +17,24 @@
    vulnerable Linux lab, on both PHP 8.4.26 and 8.4.27.
 7. Application-dependent command execution through the public handler-mismatch
    chain on both vulnerable and patched Windows builds.
+8. On PHP 8.2.34 FPM in an instrumented Linux lab, attacker-controlled
+   multipart content supplied an object handler-table pointer. A chosen marker
+   fault reproduced three out of three times, a chosen instruction-pointer
+   value reproduced three out of three times, and `system()` executed `id` as
+   `www-data` in approximately two out of three runs. The matching PHP 8.2.35
+   recipe completed without execution or crash.
 
 ## Not demonstrated by us
 
-- Instruction-pointer control through the engine corruption.
-- A complete heap-grooming chain against the tested builds.
-- End-to-end engine-memory-corruption RCE for CVE-2026-109618 or
-  CVE-2026-109619.
+- A portable engine-memory-corruption exploit across PHP builds or SAPIs.
+- A self-contained remote engine exploit with ASLR enabled.
 - The large PHPSESSID heap-leak primitive in our Windows CGI setup.
 - Malware across the complete set of 267 GitHub search results.
 
-The FPM SIGSEGV establishes a vulnerable-versus-patched engine crash
-differential. Until a debugger backtrace and controlled overwrite are captured,
-we do not describe it as controlled corruption or RCE.
+The FPM result demonstrates controlled engine execution under laboratory
+conditions. ASLR was disabled, the producer session was planted directly by
+the harness, and the address leak needed for a real deployment was not
+reproduced. Those limits must accompany any reference to engine-level RCE.
 
 ## Required wording for application-dependent RCE
 

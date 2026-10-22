@@ -55,8 +55,16 @@ were repeated against PHP 8.2.35; six consumer requests completed for each case
 without a segfault.
 
 The Linux kernel and FPM logs establish the fatal-OOM → session-decode warning
-→ SIGSEGV sequence. Debugger capture was still pending at the time of this
-snapshot, so the exact crashing function and corrupt structure remain open.
+→ SIGSEGV sequence. A later debugger phase located stale-state consumption in
+`var_tmp_var` below `rfc1867_post_handler`, then used repeated marker controls
+before replacing the chosen target with `system()` in the lab's libc.
+
+The controlled-execution phase used one PHP 8.2.34 FPM worker with ASLR
+disabled to keep addresses stable. The harness directly planted the producer
+session, isolating the engine primitive from session-delivery questions. The
+same recipe was run against PHP 8.2.35 as the patched control. These choices
+make the result suitable for engine analysis, but they do not establish a
+portable or self-contained remote exploit.
 
 ## Interpretation rules
 

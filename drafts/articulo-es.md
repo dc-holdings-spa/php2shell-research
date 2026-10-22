@@ -1,20 +1,24 @@
 # PHP2Shell bajo el microscopio: qué cambió con el parche y qué encontramos al reproducirlo
 
 **Dos vulnerabilidades críticas obligaron a PHP a publicar una corrección de
-emergencia. En Adversario comparamos ocho builds, reproducimos el crash del
-motor en PHP-FPM y medimos una diferencia de memoria que separa con claridad
-las versiones vulnerables de las corregidas.**
+emergencia. En Adversario comparamos ocho builds y llevamos la cadena de
+estado stale de PHP-FPM desde el crash hasta ejecución controlada en un
+laboratorio instrumentado.**
 
 **Investigación:** Adversario Security Research · **Autor:** 3ky<br>
-**Fecha:** 22 de octubre de 2026 · **Lectura:** 13 minutos
+**Fecha:** 22 de octubre de 2026 · **Lectura:** 16 minutos
+
+<!-- article-body -->
 
 > **Resumen ejecutivo:** actualice el runtime PHP a 8.2.35, 8.3.36, 8.4.27 o
 > 8.5.12. En nuestro laboratorio, las cuatro versiones vulnerables fallaron al
 > procesar el mismo multipart que las cuatro versiones corregidas completaron.
-> También reprodujimos en PHP-FPM 8.2.34 un SIGSEGV después de consumir estado
-> stale; PHP-FPM 8.2.35 permaneció estable bajo el mismo diseño. Este trabajo
-> demuestra el diferencial y el crash del motor, pero no ejecución controlada
-> mediante la corrupción de memoria.
+> En PHP-FPM 8.2.34 llevamos el estado stale desde un SIGSEGV determinista hasta
+> control del puntero de instrucciones y ejecución de `id` como `www-data`.
+> PHP-FPM 8.2.35 permaneció limpio con la misma receta. El resultado demuestra
+> RCE del motor bajo condiciones de laboratorio; no es un exploit remoto listo
+> para usar: ASLR estaba desactivado, la sesión productora fue plantada por el
+> harness y no reproducimos la fuga de direcciones necesaria fuera del lab.
 
 El 21 de octubre de 2026, PHP publicó cuatro versiones de emergencia para
 corregir CVE-2026-109618 y CVE-2026-109619. Ambas vulnerabilidades afectan al
@@ -197,8 +201,10 @@ El CGI one-shot permitió observar el diferencial, pero no conservar estado
 entre requests. El FastCGI de Windows no reprodujo el consumidor stale ni la
 cookie de sesión anormalmente grande descrita en investigaciones públicas.
 Sobre `mod_php` de Windows ejecutamos 240 variantes con PageHeap y no obtuvimos
-un crash atribuible al CVE. En Linux confirmamos el diferencial del parser y la
-firma temprana del consumidor de sesión, sin alcanzar corrupción controlada.
+un crash atribuible al CVE. Las primeras corridas en Linux confirmaron el
+diferencial del parser y la firma temprana del consumidor de sesión; la
+instrumentación posterior en FPM permitió seguir la cadena completa descrita
+más adelante.
 
 Estos negativos importan. Delimitan qué formas terminan en un OOM limpio, qué
 SAPI elimina el worker y dónde conviene buscar el estado persistente. También
@@ -235,11 +241,46 @@ repetición del caso de 14 MiB reprodujo ambas direcciones. El log de FPM dejó 
 secuencia completa: fatal dentro del productor, warning al decodificar la sesión
 del consumidor y salida del child por señal 11.
 
-Este resultado reproduce un crash diferencial del motor consistente con
-CVE-2026-109619. Todavía falta capturar el backtrace bajo debugger, identificar
-la estructura exacta y demostrar un overwrite controlado. Un SIGSEGV
-determinista ofrece un oráculo para continuar el análisis; no equivale a control
-del instruction pointer ni a una shell.
+Este resultado cerró el primer diferencial del motor consistente con
+CVE-2026-109619. Un SIGSEGV aislado no equivale a control del instruction
+pointer ni a una shell, así que continuamos desde ese oráculo bajo debugger.
+
+## Del crash a ejecución controlada en el motor
+
+El backtrace ubicó el consumo del estado stale dentro de `var_tmp_var`, llamado
+desde `rfc1867_post_handler` durante `php_request_startup`. La petición
+productora agotaba memoria a mitad de `unserialize` y dejaba una tabla de
+variables con objetos parcialmente construidos. La petición consumidora usaba
+upload progress antes de que el runtime vulnerable reiniciara ese estado.
+
+El siguiente paso fue comprobar que el consumidor no solo caminaba memoria
+inválida. Reclamamos un slot del objeto anterior con contenido de una parte
+multipart y usamos una referencia serializada para volver a alcanzar ese
+objeto. El motor terminó leyendo desde el request atacante el puntero a la
+tabla de handlers del objeto resucitado.
+
+La progresión quedó registrada con GDB, logs de FPM y controles repetidos:
+
+| Hito | Resultado en PHP 8.2.34 FPM |
+|---|---:|
+| Puntero de tabla de handlers con marcador atacante | **3/3** |
+| Salto a una dirección elegida en el registro de instrucciones | **3/3** |
+| `system()` ejecutó `id` como `www-data` | **aprox. 2/3** |
+| Misma receta en PHP 8.2.35 | **sin ejecución ni crash** |
+
+El marcador produjo el mismo fallo controlado en las tres corridas. Al
+reemplazarlo por la dirección de `system()` en la libc del laboratorio, el
+comando escribió `uid=33(www-data)` desde el proceso de PHP. La corrida que no
+completó la prueba mostró sensibilidad de alineación a la historia del worker;
+por eso informamos la reproducibilidad observada y no un éxito determinista.
+
+El alcance es deliberadamente estrecho. La prueba se hizo sobre PHP 8.2.34 FPM
+en Linux con un solo worker y ASLR desactivado. El harness plantó directamente
+la sesión productora para aislar la primitiva del motor. No reprodujimos la
+fuga de direcciones publicada por otros investigadores, no demostramos esta
+cadena en las otras ramas y no publicamos el exploit. Esto prueba ejecución
+controlada mediante CVE-2026-109619 bajo condiciones de laboratorio; no prueba
+portabilidad ni una cadena remota autónoma contra una instalación real.
 
 ## Una pista forense en los archivos de sesión
 
@@ -255,9 +296,9 @@ coincide temporalmente con errores de memoria, actividad de upload progress y
 peticiones multipart anómalas. Por sí solo tiene demasiadas causas operativas
 posibles para tratarlo como indicador concluyente.
 
-## Ejecución de comandos y límites del claim
+## Tres resultados de ejecución, tres límites distintos
 
-También reproducimos dos cadenas públicas dependientes de la aplicación. La
+Además del RCE del motor, reproducimos dos cadenas públicas dependientes de la aplicación. La
 cadena de mismatch entre handlers de serialización ejecutó `whoami` durante el
 arranque del request en cuatro builds de Windows. Chain A produjo ejecución
 remota mediante HTTP en nuestro laboratorio Linux usando datos persistidos por
@@ -268,12 +309,12 @@ Chain A necesitó un LFI, conocer el directorio de sesiones,
 valores de configuración no son los defaults de PHP. La cadena funcionó tanto
 en PHP 8.4.26 como en 8.4.27.
 
-La ejecución es real, pero pertenece a una superficie de sesión y aplicación
-documentada públicamente por Qi Deng e ikow. Nuestro laboratorio todavía no ha
-demostrado control del instruction pointer ni ejecución final mediante heap
-grooming. Ahora sí reprodujimos el crash del consumidor stale en el motor con
-un control parcheado limpio. El crash diferencial, las cadenas dependientes de
-la aplicación y un RCE del motor siguen siendo resultados distintos.
+Estas ejecuciones son reales, pero pertenecen a superficies de sesión y
+aplicación documentadas públicamente por Qi Deng e ikow. Funcionaron también
+en versiones corregidas, por lo que no demuestran explotación de la corrupción
+parcheada. El RCE de FPM descrito arriba sí depende del estado stale del motor y
+queda cortado por 8.2.35. Mantener separados esos tres resultados evita atribuir
+al CVE lo que en realidad exige un LFI o un mismatch de handlers.
 
 ## La segunda emergencia apareció en GitHub
 
@@ -342,27 +383,25 @@ mejor evidencia que ejecutar código ajeno y confiar en su salida.
 
 ## La investigación continúa
 
-Esta primera entrega cierra con un diferencial reproducible del parche, un
-crash del consumidor FPM exclusivo de la versión vulnerable, un mapa por SAPI,
-una hipótesis forense y una auditoría acotada de la oleada pública. Es material
-suficiente para que otros equipos comparen sus entornos, mejoren el hunting y
-eviten confundir un fatal o una cadena de aplicación con explotación completa
-del motor.
+Esta primera entrega cierra con un diferencial reproducible del parche, control
+del flujo y ejecución de comando en el motor bajo condiciones de laboratorio,
+un mapa por SAPI, una hipótesis forense y una auditoría acotada de la oleada
+pública. La progresión desde OOM hasta `system()` permite separar cada nivel de
+evidencia en vez de presentar cualquier caída como explotación completa.
 
-El siguiente paso será identificar bajo debugger la estructura exacta que
-consume el estado stale y validar las reglas defensivas contra tráfico del
-laboratorio. Publicaremos una segunda entrega si esa evidencia permite avanzar
-el análisis. Hasta entonces, el resultado queda descrito por lo que demuestra:
-un crash diferencial del motor, reproducible y separado de cualquier claim de
-RCE controlado.
+Los siguientes pasos son reproducir una fuga de direcciones con ASLR activo,
+entender la variación de alineación que deja el RCE en aproximadamente dos de
+tres corridas, probar portabilidad entre builds y validar las reglas defensivas
+contra tráfico del laboratorio. Publicaremos una segunda entrega cuando esos
+resultados tengan controles equivalentes.
 
 PHP2Shell expuso una falla profunda en el ciclo de vida del intérprete. La
 respuesta útil combina actualización, mediciones comparables, preservación de
 evidencia y atribución precisa. También exige declarar el límite del
-experimento: pudimos medir el efecto del parche y reproducir cadenas remotas
-dependientes de la aplicación. También reprodujimos un crash diferencial del
-motor en la cadena FPM; la corrupción controlada y la ejecución final mediante
-esa ruta siguen fuera de nuestros resultados.
+experimento: medimos el efecto del parche, reproducimos cadenas remotas
+dependientes de la aplicación y alcanzamos ejecución controlada mediante el
+motor en un entorno instrumentado. La fuga de direcciones, la portabilidad y
+una cadena remota autónoma con ASLR activo siguen fuera de nuestros resultados.
 
 ## Fuentes y créditos
 

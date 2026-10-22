@@ -1,0 +1,5 @@
+stage,build,environment,result,reproducibility,scope
+handler_pointer,8.2.34,php-fpm_linux_aslr_off,attacker_marker_dereferenced,3_of_3,instrumented_lab
+instruction_pointer,8.2.34,php-fpm_linux_aslr_off,chosen_ip_reached,3_of_3,instrumented_lab
+command_execution,8.2.34,php-fpm_linux_aslr_off,id_as_www_data,approximately_2_of_3,instrumented_lab
+patched_control,8.2.35,php-fpm_linux_aslr_off,no_execution_no_crash,verified_same_recipe,instrumented_lab

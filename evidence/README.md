@@ -11,3 +11,8 @@ the frozen evidence set.
 `fpm-stale-state-summary.csv` records only the verified outcome summary. The
 underlying kernel and FPM logs remain in restricted storage until they are
 frozen and sanitized.
+
+`fpm-engine-control-summary.csv` records the sanitized evidence ladder for
+handler-pointer control, instruction-pointer control, command execution, and
+the patched-build control. It intentionally excludes addresses, payload bytes,
+session material, and the exploit implementation.

@@ -26,19 +26,26 @@ Published article:
   `mod_php`, and Linux `mod_php`, including negative results.
 - A deterministic stale-state consumer crash on PHP 8.2.34 FPM after a
   producer-side mid-walk OOM; the matching PHP 8.2.35 control completed cleanly.
+- Controlled execution through the CVE-2026-109619 engine path on PHP 8.2.34
+  FPM in an instrumented Linux lab: handler-pointer control and a chosen
+  instruction pointer reproduced 3/3, followed by `system()` executing `id` as
+  `www-data` in approximately 2/3 runs. The same recipe on 8.2.35 remained clean.
 - A same-day snapshot of 267 GitHub search results and five deep static audits.
   We confirmed spam and attribution problems, but no malware in the inspected
   sample.
 
 ## Claim boundaries
 
-We reproduced remote command execution through public, application-dependent
-chains. We did **not** reproduce end-to-end command execution through the
-engine memory-corruption path of CVE-2026-109618/109619.
+We reproduced controlled execution through the CVE-2026-109619 engine path on
+PHP 8.2.34 FPM under narrow laboratory conditions. This is not a portable or
+self-contained remote exploit: ASLR was disabled, the harness planted the
+producer session directly, the address-leak primitive was not reproduced, and
+the result has not been ported beyond the tested build. The command-execution
+exploit remains private.
 
-We did reproduce an engine-level crash differential consistent with
-CVE-2026-109619. A deterministic SIGSEGV is evidence of a memory-safety failure;
-it is not evidence of instruction-pointer control or command execution.
+We separately reproduced remote command execution through public,
+application-dependent chains. Those chains also worked on fixed releases and
+must not be presented as bypasses of the engine patch.
 
 The Chain A reproduction required an LFI, a known session path,
 `session.upload_progress.cleanup=Off`, and `session.use_only_cookies=0`. The
@@ -51,13 +58,12 @@ See [Claims and scope](docs/claims-and-scope.md) before quoting this work.
 ## Research status
 
 The first research phase is complete and supports publication: the patch
-differential, FPM stale-state crash, cross-SAPI map, forensic hypothesis, and
-same-day repository audit are documented with explicit limits.
+differential, FPM stale-state crash, controlled engine execution, cross-SAPI
+map, forensic hypothesis, and same-day repository audit are documented with
+explicit limits.
 
-A follow-up will be published if subsequent debugger work identifies the exact
-crashing structure or produces stronger defensive artifacts. Until then, the
-FPM result remains an engine-level crash differential, not controlled
-corruption or engine-level RCE.
+Follow-up work is focused on an address leak with ASLR enabled, portability,
+the observed heap-alignment variance, and stronger defensive artifacts.
 
 ## Repository map
 
