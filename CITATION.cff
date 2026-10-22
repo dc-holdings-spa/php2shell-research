@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this research, cite the repository and its primary sources."
+title: "PHP2Shell: independent validation and defensive research"
+type: software
+authors:
+  - name: "3ky"
+    affiliation: "Adversario Security Research"
+repository-code: "https://github.com/dc-holdings-spa/php2shell-research"
+url: "https://adversario.cl"
+license: MIT
+date-released: 2026-10-22
+

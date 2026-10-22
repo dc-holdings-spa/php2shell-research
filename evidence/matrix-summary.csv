@@ -1,0 +1,8 @@
+branch,vulnerable_build,vulnerable_result,patched_build,patched_result,repetitions,environment
+8.2,8.2.34,fatal_oom,8.2.35,parse_complete,2,windows_cgi_oneshot
+8.3,8.3.35,fatal_oom,8.3.36,parse_complete,2,windows_cgi_oneshot
+8.4,8.4.26,fatal_oom,8.4.27,parse_complete,2,windows_cgi_oneshot
+8.5,8.5.11,fatal_oom,8.5.12,parse_complete,2,windows_cgi_oneshot
+8.3,8.3.35,worker_died,8.3.36,worker_survived,3,windows_fastcgi_persistent
+8.4,8.4.26,fatal_from_140k_headers,8.4.27,parsed_through_260k_headers,3,windows_apache_mod_php
+
